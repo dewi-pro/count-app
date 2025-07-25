@@ -1,25 +1,53 @@
-import logo from './logo.svg';
-import './App.css';
+// src/App.js
+import React from 'react';
 
-function App() {
+import {
+  BrowserRouter as Router,
+  Link,
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom';
+
+import Counter from './components/Counter';
+import History from './components/History';
+import Login from './components/Login';
+import {
+  AuthProvider,
+  useAuth,
+} from './context/AuthContext';
+
+const PrivateRoute = ({ children }) => {
+  const { user } = useAuth();
+  return user ? children : <Navigate to="/" />;
+};
+
+function AppRoutes() {
+  const { user, logout } = useAuth();
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <nav>
+        {user && (
+          <>
+            <Link to="/counter">Counter</Link> | <Link to="/history">History</Link> |{' '}
+            <button onClick={logout}>Logout</button>
+          </>
+        )}
+      </nav>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/counter" element={<PrivateRoute><Counter /></PrivateRoute>} />
+        <Route path="/history" element={<PrivateRoute><History /></PrivateRoute>} />
+      </Routes>
+    </Router>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
+  );
+}
