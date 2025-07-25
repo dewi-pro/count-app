@@ -1,4 +1,5 @@
-// src/App.js
+import './App.css';
+
 import React from 'react';
 
 import {
@@ -28,17 +29,28 @@ function AppRoutes() {
   return (
     <Router>
       <nav>
-        {user && (
+        {user ? (
           <>
-            <Link to="/counter">Counter</Link> | <Link to="/history">History</Link> |{' '}
+            <Link to="/counter">Counter</Link>
+            <span className="separator">|</span>
+            <Link to="/history">History</Link>
             <button onClick={logout}>Logout</button>
           </>
-        )}
+        ) : null}
       </nav>
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/counter" element={<PrivateRoute><Counter /></PrivateRoute>} />
-        <Route path="/history" element={<PrivateRoute><History /></PrivateRoute>} />
+        <Route
+          path="/"
+          element={user ? <Navigate to="/counter" /> : <Login />}
+        />
+        <Route
+          path="/counter"
+          element={<PrivateRoute><Counter /></PrivateRoute>}
+        />
+        <Route
+          path="/history"
+          element={<PrivateRoute><History /></PrivateRoute>}
+        />
       </Routes>
     </Router>
   );

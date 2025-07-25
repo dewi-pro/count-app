@@ -6,8 +6,10 @@ import React, {
 } from 'react';
 
 import {
+  browserLocalPersistence,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  setPersistence,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
@@ -18,11 +20,21 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); // 🔄
 
   useEffect(() => {
-    return onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-    });
+    // 🧠 Set persistence before watching auth state
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        return onAuthStateChanged(auth, (firebaseUser) => {
+          setUser(firebaseUser);
+          setLoading(false); // ✅ Done loading
+        });
+      })
+      .catch((error) => {
+        console.error('Error setting persistence:', error);
+        setLoading(false); // Still allow app to load
+      });
   }, []);
 
   const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
@@ -30,7 +42,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

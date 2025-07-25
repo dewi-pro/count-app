@@ -36,3 +36,49 @@
     transform: rotate(360deg);
   }
 }
+/* App.css */
+
+nav {
+  background-color: #1e40af;
+  padding: 12px 24px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 2px 6px rgba(30, 64, 175, 0.5);
+}
+
+nav a {
+  color: #bfdbfe;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: color 0.3s ease;
+}
+
+nav a:hover {
+  color: #fef3c7;
+}
+
+nav button {
+  margin-left: auto;
+  background-color: #f97316;
+  border: none;
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+nav button:hover {
+  background-color: #ea580c;
+}
+
+nav span.separator {
+  color: #bfdbfe;
+  -webkit-user-select: none;
+}
