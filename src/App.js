@@ -28,16 +28,13 @@ function AppRoutes() {
 
   return (
     <Router>
-      <nav>
-        {user ? (
-          <>
+        {user ?  <nav>
+        
             <Link to="/counter">Counter</Link>
             <span className="separator">|</span>
             <Link to="/history">History</Link>
             <button onClick={logout}>Logout</button>
-          </>
-        ) : null}
-      </nav>
+      </nav>: null}
       <Routes>
         <Route
           path="/"

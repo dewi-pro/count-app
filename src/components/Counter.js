@@ -8,13 +8,17 @@ import React, {
 
 import { getAuth } from 'firebase/auth';
 import {
+  addDoc,
+  collection,
+  deleteDoc,
   doc,
-  getDoc,
-  setDoc,
+  getDocs,
+  updateDoc,
 } from 'firebase/firestore';
 import Calendar from 'react-calendar';
 
 import { db } from '../firebase';
+import TableTemplate from './Table';
 
 const titles = ['KD', 'B'];
 
@@ -25,17 +29,18 @@ const Counter = () => {
 const [editingIndex, setEditingIndex] = useState(null);
 
   useEffect(() => {
-    if (!user) return;
-    const fetchData = async () => {
-      const userDocRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(userDocRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setSavedEntries(data.timestampsArray || []);
-      }
-    };
-    fetchData();
-  }, [user]);
+  if (!user) return;
+  fetchEntries();
+}, [user]);
+
+const fetchEntries = async () => {
+  const entriesColRef = collection(db, 'users', user.uid, 'entries');
+  const querySnapshot = await getDocs(entriesColRef);
+  const entries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  // Sort newest on top if needed
+  entries.sort((a, b) => new Date(b.B || 0) - new Date(a.B || 0));
+  setSavedEntries(entries);
+};
 
   const handleChange = (label, field, value) => {
     setFormData(prev => ({
@@ -46,13 +51,13 @@ const [editingIndex, setEditingIndex] = useState(null);
       },
     }));
   };
-const handleDelete = async (index) => {
-  const updatedEntries = savedEntries.filter((_, i) => i !== index);
-  setSavedEntries(updatedEntries);
-  if (user) {
-    const userDocRef = doc(db, 'users', user.uid);
-    await setDoc(userDocRef, { timestampsArray: updatedEntries }, { merge: true });
-  }
+
+  const handleDelete = async (index) => {
+  const entryToDelete = savedEntries[index];
+  if (!user || !entryToDelete?.id) return;
+
+  await deleteDoc(doc(db, 'users', user.uid, 'entries', entryToDelete.id));
+  fetchEntries();
 };
 
 const handleEdit = (index) => {
@@ -72,87 +77,36 @@ const handleEdit = (index) => {
 };
 
 const handleUpdate = async () => {
-  if (editingIndex === null) return;
+  if (editingIndex === null || !user) return;
 
+  const entryId = savedEntries[editingIndex].id;
   const updatedEntry = {};
   for (const label of titles) {
     const date = formData[label]?.date;
     const time = formData[label]?.time;
-    updatedEntry[label] = date && time ? new Date(`${date}T${time}`).toISOString() : null;
+    updatedEntry[label] = (date && time) ? new Date(`${date}T${time}`).toISOString() : null;
   }
 
-  const updatedEntries = savedEntries.map((entry, i) =>
-    i === editingIndex ? updatedEntry : entry
-  );
-
-  if (user) {
-    const userDocRef = doc(db, 'users', user.uid);
-    await setDoc(userDocRef, { timestampsArray: updatedEntries }, { merge: true });
-  }
-
-  setSavedEntries(updatedEntries);
+  await updateDoc(doc(db, 'users', user.uid, 'entries', entryId), updatedEntry);
   setEditingIndex(null);
   setFormData({});
+  fetchEntries();
 };
 
   const handleSave = async () => {
-    if (!user) return;
+  if (!user) return;
 
-    const newEntry = {};
-    for (const label of titles) {
-      const date = formData[label]?.date;
-      const time = formData[label]?.time;
-      if (date && time) {
-        newEntry[label] = new Date(`${date}T${time}`).toISOString();
-      } else {
-        newEntry[label] = null;
-      }
-    }
+  const newEntry = {};
+  for (const label of titles) {
+    const date = formData[label]?.date;
+    const time = formData[label]?.time;
+    newEntry[label] = (date && time) ? new Date(`${date}T${time}`).toISOString() : null;
+  }
 
-    const userDocRef = doc(db, 'users', user.uid);
-    const updatedEntries = [...savedEntries, newEntry];
-
-    await setDoc(userDocRef, { timestampsArray: updatedEntries }, { merge: true });
-
-    setSavedEntries(updatedEntries);
-    setFormData({});
-  };
-
-  const formatDateTime = (iso) => {
-    if (!iso) return '-';
-    const d = new Date(iso);
-    return d.toLocaleString();
-  };
-
-  const diffBKD = (entry) => {
-    if (!entry.B || !entry.KD) return '-';
-    const bDate = new Date(entry.B);
-    const kdDate = new Date(entry.KD);
-    const diffMs = bDate - kdDate;
-    if (diffMs < 0) return '-';
-
-    const diffHours = diffMs / (1000 * 60 * 60);
-    return diffHours < 24
-      ? `${Math.floor(diffHours)} hours`
-      : `${Math.floor(diffHours/24)} days`;
-  };
-
-  const getTotalB = (i) => {
-  const b = savedEntries[i]?.B;
-  const nextKD = savedEntries[i + 1]?.KD;
-
-  if (!b || !nextKD) return '-';
-
-  const bDate = new Date(b);
-  const nextKDDate = new Date(nextKD);
-
-  const diffMs = nextKDDate - bDate;
-  if (diffMs <= 0) return '-';
-
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  return `${Math.floor(diffDays)} days`;
+  await addDoc(collection(db, 'users', user.uid, 'entries'), newEntry);
+  setFormData({});
+  fetchEntries(); // refresh table
 };
-
 
   const getDatesBetween = (start, end) => {
     const dates = [];
@@ -204,44 +158,12 @@ const handleUpdate = async () => {
   {editingIndex === null ? 'Save Entry' : 'Update Entry'}
 </button>
 
-
-      <table className="table">
-        <thead>
-  <tr>
-    {titles.map(label => (
-      <th key={label}>{label}</th>
-    ))}
-    <th>total KD</th>
-    <th>TOTAL B</th>
-    <th>Actions</th>
-  </tr>
-</thead>
-<tbody>
-  {savedEntries.length === 0 ? (
-    <tr>
-      <td colSpan={titles.length + 3} className="no-data">
-        No entries yet.
-      </td>
-    </tr>
-  ) : (
-    savedEntries.map((entry, i) => (
-      <tr key={i}>
-        {titles.map(label => (
-          <td key={label}>{formatDateTime(entry[label])}</td>
-        ))}
-        <td>{diffBKD(entry)}</td>
-        <td>{getTotalB(i)}</td>
-        <td>
-          <button onClick={() => handleEdit(i)}>Edit</button>
-          <button onClick={() => handleDelete(i)}>Delete</button>
-        </td>
-      </tr>
-    ))
-  )}
-</tbody>
-
-
-      </table>
+<TableTemplate
+  titles={['KD', 'B']}
+  entries={savedEntries}
+  onEdit={handleEdit}
+  onDelete={handleDelete}
+/>
 
       <div className="calendar-container">
         <h2 className="calendar-title">KD Period Calendar</h2>

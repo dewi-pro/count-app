@@ -1,6 +1,5 @@
-import './Login.css'; // Make sure to create this
+import './Login.css';
 
-// src/components/Login.js
 import React, { useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
-  const { login, register } = useAuth();
+  const { login, register, loginWithGoogle } = useAuth(); // include Google login
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isRegister, setIsRegister] = useState(false);
@@ -29,34 +28,64 @@ const Login = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      await loginWithGoogle();
+      navigate('/counter');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <div className="login-container">
+            <img src="/abstract-shape.svg" alt="" className="abstract-shape" />
+
       <form className="login-card" onSubmit={handleSubmit}>
-        <h2>{isRegister ? 'Create an Account' : 'Login'}</h2>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          required
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          required
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button type="submit" className="btn-primary">
-          {isRegister ? 'Register' : 'Login'}
-        </button>
+  <div className="login-header">
+    <h2>Welcome Back</h2>
+  </div>
 
-        <p className="toggle-link" onClick={() => setIsRegister(!isRegister)}>
-          {isRegister ? 'Already have an account? Login' : 'No account? Register'}
-        </p>
+  <div className="input-group">
+    <label>Email</label>
+    <input
+      type="email"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      required
+    />
+  </div>
 
-        {error && <p className="error">{error}</p>}
-      </form>
+  <div className="input-group">
+    <label>Password</label>
+    <input
+      type="password"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      required
+    />
+  </div>
+
+  <div className="action-row">
+
+<button type="button" className="btn-google" onClick={handleGoogleLogin}>
+  <img src="/google-icon.svg" alt="Google" className="google-icon" />
+  Continue with Google
+</button>
+    <button type="submit" className="submit-circle">
+      <span>&rarr;</span>
+    </button>
+    <span className="sign-in-text">Sign in</span>
+  </div>
+
+  {/* <div className="link-row">
+    <p onClick={() => setIsRegister(!isRegister)}>Sign up</p>
+    <p>Forgot Password</p>
+  </div> */}
+
+  {error && <p className="error">{error}</p>}
+</form>
+
     </div>
   );
 };

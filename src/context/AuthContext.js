@@ -8,41 +8,54 @@ import React, {
 import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   onAuthStateChanged,
   setPersistence,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
 } from 'firebase/auth';
 
 import { auth } from '../firebase';
 
 const AuthContext = createContext();
+const googleProvider = new GoogleAuthProvider();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // 🔄
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 🧠 Set persistence before watching auth state
     setPersistence(auth, browserLocalPersistence)
       .then(() => {
         return onAuthStateChanged(auth, (firebaseUser) => {
           setUser(firebaseUser);
-          setLoading(false); // ✅ Done loading
+          setLoading(false);
         });
       })
       .catch((error) => {
         console.error('Error setting persistence:', error);
-        setLoading(false); // Still allow app to load
+        setLoading(false);
       });
   }, []);
 
+  // Auth functions
   const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
   const register = (email, password) => createUserWithEmailAndPassword(auth, email, password);
   const logout = () => signOut(auth);
+  const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        register,
+        logout,
+        loginWithGoogle,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
