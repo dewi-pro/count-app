@@ -22,6 +22,7 @@ const Counter = () => {
   const [formData, setFormData] = useState({});
   const [savedEntries, setSavedEntries] = useState([]);
   const user = getAuth().currentUser;
+const [editingIndex, setEditingIndex] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -45,6 +46,54 @@ const Counter = () => {
       },
     }));
   };
+const handleDelete = async (index) => {
+  const updatedEntries = savedEntries.filter((_, i) => i !== index);
+  setSavedEntries(updatedEntries);
+  if (user) {
+    const userDocRef = doc(db, 'users', user.uid);
+    await setDoc(userDocRef, { timestampsArray: updatedEntries }, { merge: true });
+  }
+};
+
+const handleEdit = (index) => {
+  setEditingIndex(index);
+  const entry = savedEntries[index];
+  const newForm = {};
+  for (const label of titles) {
+    if (entry[label]) {
+      const dateObj = new Date(entry[label]);
+      newForm[label] = {
+        date: dateObj.toISOString().split('T')[0],
+        time: dateObj.toTimeString().slice(0, 5),
+      };
+    }
+  }
+  setFormData(newForm);
+};
+
+const handleUpdate = async () => {
+  if (editingIndex === null) return;
+
+  const updatedEntry = {};
+  for (const label of titles) {
+    const date = formData[label]?.date;
+    const time = formData[label]?.time;
+    updatedEntry[label] = date && time ? new Date(`${date}T${time}`).toISOString() : null;
+  }
+
+  const updatedEntries = savedEntries.map((entry, i) =>
+    i === editingIndex ? updatedEntry : entry
+  );
+
+  if (user) {
+    const userDocRef = doc(db, 'users', user.uid);
+    await setDoc(userDocRef, { timestampsArray: updatedEntries }, { merge: true });
+  }
+
+  setSavedEntries(updatedEntries);
+  setEditingIndex(null);
+  setFormData({});
+};
 
   const handleSave = async () => {
     if (!user) return;
@@ -84,9 +133,26 @@ const Counter = () => {
 
     const diffHours = diffMs / (1000 * 60 * 60);
     return diffHours < 24
-      ? `${diffHours.toFixed(1)} hours`
-      : `${(diffHours / 24).toFixed(2)} days`;
+      ? `${Math.floor(diffHours)} hours`
+      : `${Math.floor(diffHours/24)} days`;
   };
+
+  const getTotalB = (i) => {
+  const b = savedEntries[i]?.B;
+  const nextKD = savedEntries[i + 1]?.KD;
+
+  if (!b || !nextKD) return '-';
+
+  const bDate = new Date(b);
+  const nextKDDate = new Date(nextKD);
+
+  const diffMs = nextKDDate - bDate;
+  if (diffMs <= 0) return '-';
+
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  return `${Math.floor(diffDays)} days`;
+};
+
 
   const getDatesBetween = (start, end) => {
     const dates = [];
@@ -134,36 +200,47 @@ const Counter = () => {
         ))}
       </div>
 
-      <button className="save-button" onClick={handleSave}>
-        Save Entry
-      </button>
+      <button className="save-button" onClick={editingIndex === null ? handleSave : handleUpdate}>
+  {editingIndex === null ? 'Save Entry' : 'Update Entry'}
+</button>
+
 
       <table className="table">
         <thead>
-          <tr>
-            {titles.map(label => (
-              <th key={label}>{label}</th>
-            ))}
-            <th>B - KD</th>
-          </tr>
-        </thead>
-        <tbody>
-          {savedEntries.length === 0 && (
-            <tr>
-              <td colSpan={titles.length + 1} className="no-data">
-                No entries yet.
-              </td>
-            </tr>
-          )}
-          {savedEntries.map((entry, i) => (
-            <tr key={i}>
-              {titles.map(label => (
-                <td key={label}>{formatDateTime(entry[label])}</td>
-              ))}
-              <td>{diffBKD(entry)}</td>
-            </tr>
-          ))}
-        </tbody>
+  <tr>
+    {titles.map(label => (
+      <th key={label}>{label}</th>
+    ))}
+    <th>total KD</th>
+    <th>TOTAL B</th>
+    <th>Actions</th>
+  </tr>
+</thead>
+<tbody>
+  {savedEntries.length === 0 ? (
+    <tr>
+      <td colSpan={titles.length + 3} className="no-data">
+        No entries yet.
+      </td>
+    </tr>
+  ) : (
+    savedEntries.map((entry, i) => (
+      <tr key={i}>
+        {titles.map(label => (
+          <td key={label}>{formatDateTime(entry[label])}</td>
+        ))}
+        <td>{diffBKD(entry)}</td>
+        <td>{getTotalB(i)}</td>
+        <td>
+          <button onClick={() => handleEdit(i)}>Edit</button>
+          <button onClick={() => handleDelete(i)}>Delete</button>
+        </td>
+      </tr>
+    ))
+  )}
+</tbody>
+
+
       </table>
 
       <div className="calendar-container">
