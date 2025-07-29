@@ -1,4 +1,5 @@
 import './Counter.css';
+import 'react-calendar/dist/Calendar.css';
 
 import React, {
   useEffect,
@@ -11,6 +12,7 @@ import {
   getDoc,
   setDoc,
 } from 'firebase/firestore';
+import Calendar from 'react-calendar';
 
 import { db } from '../firebase';
 
@@ -73,22 +75,42 @@ const Counter = () => {
     return d.toLocaleString();
   };
 
-  // Calculate difference between B and KD in hours or days
   const diffBKD = (entry) => {
     if (!entry.B || !entry.KD) return '-';
     const bDate = new Date(entry.B);
     const kdDate = new Date(entry.KD);
     const diffMs = bDate - kdDate;
-    if (diffMs < 0) return '-'; // B earlier than KD — no negative difference
+    if (diffMs < 0) return '-';
 
     const diffHours = diffMs / (1000 * 60 * 60);
-    if (diffHours < 24) {
-      return `${diffHours.toFixed(1)} hours`;
-    } else {
-      const diffDays = diffHours / 24;
-      return `${diffDays.toFixed(2)} days`;
-    }
+    return diffHours < 24
+      ? `${diffHours.toFixed(1)} hours`
+      : `${(diffHours / 24).toFixed(2)} days`;
   };
+
+  const getDatesBetween = (start, end) => {
+    const dates = [];
+    const current = new Date(start);
+    while (current < end) {
+      dates.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  };
+
+  const kdHighlightDates = savedEntries.flatMap(entry => {
+    if (!entry.KD || !entry.B) return [];
+
+    const kd = new Date(entry.KD);
+    const b = new Date(entry.B);
+
+    const kdDate = new Date(kd.getFullYear(), kd.getMonth(), kd.getDate());
+    const bDate = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+
+    if (kdDate >= bDate) return [];
+
+    return getDatesBetween(kdDate, bDate);
+  });
 
   return (
     <div className="container">
@@ -143,6 +165,20 @@ const Counter = () => {
           ))}
         </tbody>
       </table>
+
+      <div className="calendar-container">
+        <h2 className="calendar-title">KD Period Calendar</h2>
+        <Calendar
+            tileClassName={({ date }) => {
+            const normalized = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const isKD = kdHighlightDates.some(
+                d => d.getTime() === normalized.getTime()
+            );
+            return isKD ? 'kd-day' : null;
+            }}
+        />
+        </div>
+
     </div>
   );
 };
