@@ -11,7 +11,6 @@ import {
 } from 'react-router-dom';
 
 import Counter from './components/Counter';
-import History from './components/History';
 import Login from './components/Login';
 import {
   AuthProvider,
@@ -28,13 +27,12 @@ function AppRoutes() {
 
   return (
     <Router>
-        {user ?  <nav>
-        
-            <Link to="/counter">Counter</Link>
-            <span className="separator">|</span>
-            <Link to="/history">History</Link>
-            <button onClick={logout}>Logout</button>
-      </nav>: null}
+      {user ? (
+        <nav>
+          <Link to="/counter">Counter</Link>
+          <button onClick={logout}>Logout</button>
+        </nav>
+      ) : null}
       <Routes>
         <Route
           path="/"
@@ -42,11 +40,11 @@ function AppRoutes() {
         />
         <Route
           path="/counter"
-          element={<PrivateRoute><Counter /></PrivateRoute>}
-        />
-        <Route
-          path="/history"
-          element={<PrivateRoute><History /></PrivateRoute>}
+          element={
+            <PrivateRoute>
+              <Counter />
+            </PrivateRoute>
+          }
         />
       </Routes>
     </Router>

@@ -39,7 +39,7 @@
 /* App.css */
 
 nav {
-  background-color: #1e40af;
+  background-color: #d6336c;
   padding: 12px 24px;
   display: flex;
   gap: 16px;
@@ -50,7 +50,7 @@ nav {
 }
 
 nav a {
-  color: #bfdbfe;
+  color: #f8fafb;
   text-decoration: none;
   font-weight: 600;
   font-size: 1rem;

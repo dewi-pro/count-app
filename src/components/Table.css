@@ -18,3 +18,69 @@
   font-style: italic;
   color: #777;
 }
+/* --- Mobile Table Display --- */
+@media (max-width: 600px) {
+  .table {
+    display: block;
+    width: 100%;
+    border-spacing: 0;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    margin-bottom: 20px;
+    display: block;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    background-color: #fff0f5;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    overflow: hidden; /* Ensures border-radius applies correctly */
+  }
+  
+  .table tr:last-child {
+      margin-bottom: 0;
+  }
+  
+  /* Display the card title on mobile */
+  .card-title {
+    display: block;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #c2255c;
+    padding: 12px 15px;
+    background-color: #fce4ec; /* Lighter background for the title */
+    border-bottom: 1px solid #ff9ebf;
+  }
+
+  .table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding: 12px 15px;
+  }
+
+  .table td:last-child {
+    border-bottom: 0;
+    justify-content: flex-end; /* Align action buttons to the right */
+    gap: 10px;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    color: #c2255c;
+    text-transform: uppercase;
+  }
+}
+
+.no-data {
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+  color: #888;
+}
