@@ -72,7 +72,6 @@ const Counter = () => {
 
   const handleSave = async () => {
     if (!user) return;
-
     // Create the new entry object
     const newEntry = {};
     for (const label of TABLE_HEADERS) {
