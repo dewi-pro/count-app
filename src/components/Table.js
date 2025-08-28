@@ -157,7 +157,7 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
         prevEntry.haidHukum = "taqottu'";
         prevEntry.istihadohHukum = "";
         const phoneNumber = "6285745175624";
-        const message = `Assalamualaikum, saya ingin konsultasi kasus taqottu'.\n\nData terkait:\n- Siklus saat ini: Haid ${formatDecimalDays(
+        const message = `Assalamualaikum,\n\nNama saya: (*silahkan isi nama anda* )\n saya ingin konsultasi kasus taqottu'.\n\nData terkait:\n- Siklus saat ini: Haid ${formatDecimalDays(
           currentHaidDays
         )} hari, lalu suci ${formatDecimalDays(
           currentPurityDays
