@@ -7,7 +7,7 @@ import moment from 'moment';
  */
 export const formatDateTime = (iso) => {
   if (!iso) return "-";
-  return moment(iso).format("DD/MM/YYYY HH:mm");
+  return moment(iso).format('LLL');
 };
 
 /**

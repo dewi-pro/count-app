@@ -215,6 +215,9 @@ const Counter = () => {
   return (
     <div className="container">
       <h1 className="title">Counter Entries</h1>
+      <div className="user-info">
+    <span className="user-label">note: KD (Keluar Darah), B (Bersih)</span>
+  </div>
       {user && (
   <div className="user-info">
     <span className="user-label">Logged in as:</span>
