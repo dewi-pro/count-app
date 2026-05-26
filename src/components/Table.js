@@ -21,7 +21,7 @@ import {
   parseDurationToDays,
 } from './helper';
 
-const WA_NUMBER = '620812992819912';
+const WA_NUMBER = '+6285745175624';
 
 const parseHukumHaidPartFromString = (hukumStr) => {
   if (!hukumStr) return null;
