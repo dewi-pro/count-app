@@ -181,10 +181,13 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
       // Kondisi konsultasi WA:
       // 1. KD > 15 hari, ATAU
       // 2. B < 15 hari DAN KD + B > 15 hari
-      const kdOver15 = totalKdDays !== null && totalKdDays > 15;
+      const totalBIsZero = totalBDays === null || totalBDays === 0;
+      const totalKdIsZero = totalKdDays === null || totalKdDays === 0;
+      const kdOver15 = !totalBIsZero && !totalKdIsZero && totalKdDays !== null && totalKdDays > 15;
       const kdPlusBOver15 =
         totalKdDays !== null &&
         totalBDays !== null &&
+        !totalBIsZero && !totalKdIsZero &&
         totalBDays < 15 &&
         totalKdDays + totalBDays > 15;
       const needsWA = kdOver15 || kdPlusBOver15;
@@ -200,12 +203,16 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
       };
 
       if (!kdValid) {
-        item.ahValue = item.ahOverride ?? '-';
-        item.asValue = item.asOverride ?? '-';
         item.siklusHaid = '-';
-        // KD tidak valid (< 1 hari atau > 15 hari) -> selalu konsultasi WA
-        item.needsConsultation = true;
-        item.consultationLink = makeWaLink();
+        if (!totalBIsZero && !totalKdIsZero) {
+          item.needsConsultation = true;
+          item.consultationLink = makeWaLink();
+          item.ahValue = '-';
+          item.asValue = '-';
+        } else {
+          item.ahValue = item.ahOverride ?? '-';
+          item.asValue = item.asOverride ?? '-';
+        }
         continue;
       }
 
@@ -223,13 +230,16 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
 
       // Kalau bValid false, AS dan siklus tidak bisa dihitung
       if (!bValid) {
-        item.ahValue = ahDisplay;
-        item.asValue = item.asOverride ?? '-';
-        item.siklusHaid = '-';
         if (needsWA) {
           item.needsConsultation = true;
           item.consultationLink = makeWaLink();
+          item.ahValue = '-';
+          item.asValue = '-';
+        } else {
+          item.ahValue = ahDisplay;
+          item.asValue = item.asOverride ?? '-';
         }
+        item.siklusHaid = '-';
         continue;
       }
 
@@ -273,7 +283,10 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
       // Kondisi konsultasi WA
       if (needsWA) {
         item.needsConsultation = true;
-        item.consultationLink = makeWaLink(`- Hukum: ${item.haidHukum || 'tidak terdeteksi'}`);
+        item.consultationLink = makeWaLink();
+        item.ahValue = '-';
+        item.asValue = '-';
+        item.siklusHaid = '-';
       }
     }
 

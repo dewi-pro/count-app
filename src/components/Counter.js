@@ -562,8 +562,8 @@ const Counter = () => {
             <div className="haid-legend">
               <span><strong>KD</strong> Keluar Darah</span>
               <span><strong>B</strong> Bersih</span>
-              <span><strong>AH</strong> Asal Haid</span>
-              <span><strong>AS</strong> Asal Suci</span>
+              <span><strong>AH</strong> Adat Haid</span>
+              <span><strong>AS</strong> Adat Suci</span>
             </div>
             {user && (
               <div style={{ marginTop: 10 }}>
