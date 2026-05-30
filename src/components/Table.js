@@ -29,12 +29,6 @@ const parseHukumHaidPartFromString = (hukumStr) => {
   return match ? parseFloat(match[1]) : null;
 };
 
-// const parseHukumIstihadohPartFromString = (hukumStr) => {
-//   if (!hukumStr) return null;
-//   const match = hukumStr.match(/ist(?:ihadoh)?\s+([\d.]+)/);
-//   return match ? parseFloat(match[1]) : null;
-// };
-
 const EditableCell = ({ entryId, field, displayValue }) => {
   const [editing, setEditing] = useState(false);
   const [inputVal, setInputVal] = useState('');
@@ -84,7 +78,7 @@ const EditableCell = ({ entryId, field, displayValue }) => {
           }}
           autoFocus
         />
-        {/* <button
+        <button
           onClick={saveEdit}
           disabled={saving}
           style={{
@@ -112,7 +106,7 @@ const EditableCell = ({ entryId, field, displayValue }) => {
           }}
         >
           ✕
-        </button> */}
+        </button>
       </div>
     );
   }
@@ -174,20 +168,20 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
       const totalKdDays = parseDurationToDays(item.calculatedTotalKd);
       const totalBDays = parseDurationToDays(item.calculatedTotalB);
 
-      // Syarat valid AH/AS/Siklus tetap sama
       const kdValid = totalKdDays !== null && totalKdDays >= 1 && totalKdDays <= 15;
       const bValid = totalBDays !== null && totalBDays >= 15;
 
-      // Kondisi konsultasi WA:
-      // 1. KD > 15 hari, ATAU
-      // 2. B < 15 hari DAN KD + B > 15 hari
+      // null atau 0 dianggap "belum ada data"
       const totalBIsZero = totalBDays === null || totalBDays === 0;
       const totalKdIsZero = totalKdDays === null || totalKdDays === 0;
-      const kdOver15 = !totalBIsZero && !totalKdIsZero && totalKdDays !== null && totalKdDays > 15;
+
+      // Kondisi konsultasi WA:
+      // 1. KD > 15 hari (berlaku meski B = 0)
+      // 2. B < 15 hari DAN KD + B > 15 hari (hanya kalau B bukan 0)
+      const kdOver15 = !totalKdIsZero && totalKdDays > 15;
       const kdPlusBOver15 =
-        totalKdDays !== null &&
-        totalBDays !== null &&
-        !totalBIsZero && !totalKdIsZero &&
+        !totalBIsZero &&
+        !totalKdIsZero &&
         totalBDays < 15 &&
         totalKdDays + totalBDays > 15;
       const needsWA = kdOver15 || kdPlusBOver15;
@@ -202,9 +196,12 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
         return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
       };
 
+      // KD tidak valid (< 1 hari, > 15 hari, atau null)
       if (!kdValid) {
         item.siklusHaid = '-';
-        if (!totalBIsZero && !totalKdIsZero) {
+        // KD > 15 → konsul WA (meski B = 0)
+        // KD = 0/null → skip WA
+        if (!totalKdIsZero && (totalKdDays > 15 || !totalBIsZero)) {
           item.needsConsultation = true;
           item.consultationLink = makeWaLink();
           item.ahValue = '-';
@@ -216,7 +213,7 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
         continue;
       }
 
-      // --- AH --- (hitung selama kdValid, tidak peduli bValid)
+      // --- AH --- (hitung selama kdValid)
       let ahNumeric = null;
       let ahDisplay = null;
       if (item.ahOverride != null) {
@@ -228,7 +225,7 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
         ahDisplay = ahNumeric !== null ? convertDaysToDaysAndHours(ahNumeric) : '-';
       }
 
-      // Kalau bValid false, AS dan siklus tidak bisa dihitung
+      // B tidak valid
       if (!bValid) {
         if (needsWA) {
           item.needsConsultation = true;
@@ -244,7 +241,7 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
       }
 
       // --- AS ---
-      // Ambil dari entry pertama (lookback ke lebih lama) yang Total B >= 15 hari
+      // Ambil Total B entry ini kalau >= 15, kalau tidak lookback ke entry lebih lama
       let asNumeric = null;
       let asDisplay = null;
       if (item.asOverride != null) {
@@ -255,7 +252,7 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
         if (totalBDays !== null && totalBDays >= 15) {
           asNumeric = totalBDays;
         } else {
-          // sortedEntries urutan desc (terbaru di atas), entry lebih lama ada di index lebih besar
+          // sortedEntries urutan desc, entry lebih lama ada di index lebih besar
           let lookbackIndex = i + 1;
           while (lookbackIndex < tempProcessed.length) {
             const olderEntry = tempProcessed[lookbackIndex];
@@ -280,7 +277,7 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
         item.siklusHaid = '-';
       }
 
-      // Kondisi konsultasi WA
+      // Kondisi konsultasi WA (setelah kalkulasi penuh)
       if (needsWA) {
         item.needsConsultation = true;
         item.consultationLink = makeWaLink();
