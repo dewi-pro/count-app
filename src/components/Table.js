@@ -21,7 +21,7 @@ import {
   parseDurationToDays,
 } from './helper';
 
-const WA_NUMBER = '+6285745175624';
+const WA_NUMBER = '620812992819912';
 
 const parseHukumHaidPartFromString = (hukumStr) => {
   if (!hukumStr) return null;
@@ -29,13 +29,12 @@ const parseHukumHaidPartFromString = (hukumStr) => {
   return match ? parseFloat(match[1]) : null;
 };
 
-const parseHukumIstihadohPartFromString = (hukumStr) => {
-  if (!hukumStr) return null;
-  const match = hukumStr.match(/ist(?:ihadoh)?\s+([\d.]+)/);
-  return match ? parseFloat(match[1]) : null;
-};
+// const parseHukumIstihadohPartFromString = (hukumStr) => {
+//   if (!hukumStr) return null;
+//   const match = hukumStr.match(/ist(?:ihadoh)?\s+([\d.]+)/);
+//   return match ? parseFloat(match[1]) : null;
+// };
 
-// Editable cell for AH / AS
 const EditableCell = ({ entryId, field, displayValue }) => {
   const [editing, setEditing] = useState(false);
   const [inputVal, setInputVal] = useState('');
@@ -175,8 +174,20 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
       const totalKdDays = parseDurationToDays(item.calculatedTotalKd);
       const totalBDays = parseDurationToDays(item.calculatedTotalB);
 
+      // Syarat valid AH/AS/Siklus tetap sama
       const kdValid = totalKdDays !== null && totalKdDays >= 1 && totalKdDays <= 15;
       const bValid = totalBDays !== null && totalBDays >= 15;
+
+      // Kondisi konsultasi WA:
+      // 1. KD > 15 hari, ATAU
+      // 2. B < 15 hari DAN KD + B > 15 hari
+      const kdOver15 = totalKdDays !== null && totalKdDays > 15;
+      const kdPlusBOver15 =
+        totalKdDays !== null &&
+        totalBDays !== null &&
+        totalBDays < 15 &&
+        totalKdDays + totalBDays > 15;
+      const needsWA = kdOver15 || kdPlusBOver15;
 
       const makeWaLink = (extraData = '') => {
         const msg =
@@ -188,23 +199,21 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
         return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
       };
 
-      if (!kdValid || !bValid) {
-        // Syarat tidak terpenuhi
+      if (!kdValid) {
         item.ahValue = item.ahOverride ?? '-';
         item.asValue = item.asOverride ?? '-';
         item.siklusHaid = '-';
+        // KD tidak valid (< 1 hari atau > 15 hari) -> selalu konsultasi WA
         item.needsConsultation = true;
         item.consultationLink = makeWaLink();
         continue;
       }
 
-      // --- AH ---
+      // --- AH --- (hitung selama kdValid, tidak peduli bValid)
       let ahNumeric = null;
       let ahDisplay = null;
       if (item.ahOverride != null) {
-        // Pakai nilai manual dari Firestore
         ahDisplay = item.ahOverride;
-        // Coba parse angka untuk kalkulasi siklus
         const parsed = parseDurationToDays(item.ahOverride);
         ahNumeric = parsed !== null ? parsed : parseHukumHaidPartFromString(`haid ${item.ahOverride}`);
       } else {
@@ -212,28 +221,41 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
         ahDisplay = ahNumeric !== null ? convertDaysToDaysAndHours(ahNumeric) : '-';
       }
 
+      // Kalau bValid false, AS dan siklus tidak bisa dihitung
+      if (!bValid) {
+        item.ahValue = ahDisplay;
+        item.asValue = item.asOverride ?? '-';
+        item.siklusHaid = '-';
+        if (needsWA) {
+          item.needsConsultation = true;
+          item.consultationLink = makeWaLink();
+        }
+        continue;
+      }
+
       // --- AS ---
+      // Ambil dari entry pertama (lookback ke lebih lama) yang Total B >= 15 hari
       let asNumeric = null;
       let asDisplay = null;
       if (item.asOverride != null) {
-        // Pakai nilai manual dari Firestore
         asDisplay = item.asOverride;
         const parsed = parseDurationToDays(item.asOverride);
         asNumeric = parsed !== null ? parsed : totalBDays;
       } else {
-        asNumeric = totalBDays;
-        let lookbackIndex = i - 1;
-        while (asNumeric !== null && asNumeric < 15 && lookbackIndex >= 0) {
-          const previousEntry = tempProcessed[lookbackIndex];
-          const istihadohOfPrevious = parseHukumIstihadohPartFromString(
-            previousEntry.istihadohHukum
-          );
-          if (istihadohOfPrevious !== null) asNumeric += istihadohOfPrevious;
-          if (asNumeric < 15) {
-            const previousTotalB = parseDurationToDays(previousEntry.calculatedTotalB);
-            if (previousTotalB !== null) asNumeric += previousTotalB;
+        if (totalBDays !== null && totalBDays >= 15) {
+          asNumeric = totalBDays;
+        } else {
+          // sortedEntries urutan desc (terbaru di atas), entry lebih lama ada di index lebih besar
+          let lookbackIndex = i + 1;
+          while (lookbackIndex < tempProcessed.length) {
+            const olderEntry = tempProcessed[lookbackIndex];
+            const olderTotalB = parseDurationToDays(olderEntry.calculatedTotalB);
+            if (olderTotalB !== null && olderTotalB >= 15) {
+              asNumeric = olderTotalB;
+              break;
+            }
+            lookbackIndex++;
           }
-          lookbackIndex--;
         }
         asDisplay = asNumeric !== null ? convertDaysToDaysAndHours(asNumeric) : '-';
       }
@@ -248,8 +270,8 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
         item.siklusHaid = '-';
       }
 
-      // Kalau haidHukum bukan "haid" → suruh konsultasi
-      if (!item.haidHukum.startsWith('haid')) {
+      // Kondisi konsultasi WA
+      if (needsWA) {
         item.needsConsultation = true;
         item.consultationLink = makeWaLink(`- Hukum: ${item.haidHukum || 'tidak terdeteksi'}`);
       }
@@ -294,7 +316,6 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
                   {convertDaysToDaysAndHours(entry.calculatedTotalB)}
                 </td>
 
-                {/* AH - editable, independen per baris */}
                 <td data-label="AH">
                   <EditableCell
                     entryId={entry.id}
@@ -303,7 +324,6 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
                   />
                 </td>
 
-                {/* AS - editable, independen per baris */}
                 <td data-label="AS">
                   <EditableCell
                     entryId={entry.id}
