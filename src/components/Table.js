@@ -21,7 +21,7 @@ import {
   parseDurationToDays,
 } from './helper';
 
-const WA_NUMBER = '620812992819912';
+const WA_NUMBER = '6285745175624';
 
 const parseHukumHaidPartFromString = (hukumStr) => {
   if (!hukumStr) return null;
@@ -84,7 +84,7 @@ const EditableCell = ({ entryId, field, displayValue }) => {
           }}
           autoFocus
         />
-        <button
+        {/* <button
           onClick={saveEdit}
           disabled={saving}
           style={{
@@ -112,7 +112,7 @@ const EditableCell = ({ entryId, field, displayValue }) => {
           }}
         >
           ✕
-        </button>
+        </button> */}
       </div>
     );
   }
@@ -120,7 +120,7 @@ const EditableCell = ({ entryId, field, displayValue }) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
       <span>{displayValue ?? '-'}</span>
-      <button
+      {/* <button
         onClick={startEdit}
         title="Edit"
         style={{
@@ -135,7 +135,7 @@ const EditableCell = ({ entryId, field, displayValue }) => {
         }}
       >
         ✏️
-      </button>
+      </button> */}
     </div>
   );
 };
