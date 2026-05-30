@@ -558,7 +558,7 @@ const Counter = () => {
           {/* HEADER */}
           <header className="haid-header">
             <div className="haid-header-eyebrow">Catatan Haid</div>
-            <h1 className="haid-title">Counter <em>Entries</em></h1>
+            <h1 className="haid-title">Haid <em>Calculator</em></h1>
             <div className="haid-legend">
               <span><strong>KD</strong> Keluar Darah</span>
               <span><strong>B</strong> Bersih</span>

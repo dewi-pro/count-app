@@ -29,7 +29,7 @@ function AppRoutes() {
     <Router>
       {user ? (
         <nav>
-          <Link to="/counter">Counter</Link>
+          <Link to="/counter">Your Haid Calculator</Link>
           <button onClick={logout}>Logout</button>
         </nav>
       ) : null}
