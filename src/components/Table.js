@@ -114,7 +114,7 @@ const EditableCell = ({ entryId, field, displayValue }) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
       <span>{displayValue ?? '-'}</span>
-      {/* <button
+      <button
         onClick={startEdit}
         title="Edit"
         style={{
@@ -129,7 +129,7 @@ const EditableCell = ({ entryId, field, displayValue }) => {
         }}
       >
         ✏️
-      </button> */}
+      </button>
     </div>
   );
 };
@@ -225,21 +225,6 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
         ahDisplay = ahNumeric !== null ? convertDaysToDaysAndHours(ahNumeric) : '-';
       }
 
-      // B tidak valid
-      if (!bValid) {
-        if (needsWA) {
-          item.needsConsultation = true;
-          item.consultationLink = makeWaLink();
-          item.ahValue = '-';
-          item.asValue = '-';
-        } else {
-          item.ahValue = ahDisplay;
-          item.asValue = item.asOverride ?? '-';
-        }
-        item.siklusHaid = '-';
-        continue;
-      }
-
       // --- AS ---
       // Ambil Total B entry ini kalau >= 15, kalau tidak lookback ke entry lebih lama
       let asNumeric = null;
@@ -265,6 +250,18 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
           }
         }
         asDisplay = asNumeric !== null ? convertDaysToDaysAndHours(asNumeric) : '-';
+      }
+
+      // AS tidak ketemu (baik dari diri sendiri maupun lookback) -> AH juga ikut kosong
+      if (asNumeric === null) {
+        item.ahValue = '-';
+        item.asValue = '-';
+        item.siklusHaid = '-';
+        if (needsWA) {
+          item.needsConsultation = true;
+          item.consultationLink = makeWaLink();
+        }
+        continue;
       }
 
       item.ahValue = ahDisplay;
@@ -326,21 +323,9 @@ const TableTemplate = ({ titles, entries, onEdit, onDelete }) => {
                   {convertDaysToDaysAndHours(entry.calculatedTotalB)}
                 </td>
 
-                <td data-label="AH">
-                  <EditableCell
-                    entryId={entry.id}
-                    field="ahOverride"
-                    displayValue={entry.ahValue ?? '-'}
-                  />
-                </td>
+                <td data-label="AH">{entry.ahValue ?? '-'}</td>
 
-                <td data-label="AS">
-                  <EditableCell
-                    entryId={entry.id}
-                    field="asOverride"
-                    displayValue={entry.asValue ?? '-'}
-                  />
-                </td>
+                <td data-label="AS">{entry.asValue ?? '-'}</td>
 
                 <td data-label="Siklus Haid">
                   {entry.needsConsultation ? (
